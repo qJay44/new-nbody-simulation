@@ -1,3 +1,6 @@
 set(MINGW64_PATH "C:/Users/q44/Documents/Libs/mingw64/bin")
 set(SFML_PATH "C:/Users/q44/Documents/Libs/SFML-3.0.0")
 set(UTILS_PATH "C:/Users/q44/Documents/Projects/utils")
+set(IMGUI_PATH "C:/Users/q44/Documents/Libs/imgui-1.91.7")
+set(SFML_IMGUI_PATH "C:/Users/q44/Documents/Libs/imgui-sfml-3.0")
+set(LEGIT_PROFILER_PATH "C:/Users/q44/Documents/Libs/LegitProfiler")

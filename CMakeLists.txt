@@ -13,16 +13,42 @@ find_package(SFML 3 REQUIRED COMPONENTS System Window Graphics PATHS ${SFML_PATH
 
 file(GLOB_RECURSE SOURCES
   ${PROJECT_SOURCE_DIR}/src/*.cpp
-  ${UTILS_PATH}/src/*.cpp)
+  ${UTILS_PATH}/src/*.cpp
+)
 
 list(REMOVE_ITEM SOURCES ${UTILS_PATH}/src/loadTif.cpp)
 list(REMOVE_ITEM SOURCES ${UTILS_PATH}/src/saveTif.cpp)
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+# Using mannually built imgui with SFML (copying dll)
+set(SFML_IMGUI_LIB_FILE libSFML_IMGUI.dll)
+add_custom_command(
+  OUTPUT ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SFML_IMGUI_LIB_FILE}
+  COMMAND ${CMAKE_COMMAND} -E copy
+    ${IMGUI_PATH}/Build/${CMAKE_BUILD_TYPE}/${SFML_IMGUI_LIB_FILE}
+    ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SFML_IMGUI_LIB_FILE}
+  DEPENDS ${IMGUI_PATH}/Build/${CMAKE_BUILD_TYPE}/${SFML_IMGUI_LIB_FILE}
+)
+
+add_executable(${PROJECT_NAME}
+  ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${SFML_IMGUI_LIB_FILE}
+  ${SOURCES}
+)
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Werror)
 
-target_include_directories(${PROJECT_NAME} PUBLIC ${UTILS_PATH}/include)
+target_precompile_headers(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCE_DIR}/src/pch.hpp)
 
-target_precompile_headers(${PROJECT_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/src/pch.hpp)
-target_link_libraries(${PROJECT_NAME} PRIVATE SFML::System SFML::Window SFML::Graphics)
+target_include_directories(${PROJECT_NAME} PRIVATE
+  ${UTILS_PATH}/include
+  ${IMGUI_PATH}/include
+  ${SFML_IMGUI_PATH}/include
+  ${LEGIT_PROFILER_PATH}/include
+)
+
+target_link_directories(${PROJECT_NAME} PRIVATE ${IMGUI_PATH}/Build/${CMAKE_BUILD_TYPE})
+
+target_link_libraries(${PROJECT_NAME} PRIVATE
+  SFML::System SFML::Window SFML::Graphics
+  libSFML_IMGUI
+)
+
