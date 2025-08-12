@@ -1,10 +1,11 @@
 #include "ImGuiProfilerRenderer.h"
+#include "Spawner.hpp"
 #include "imgui-SFML.h"
 
 #include "quadtree/Quadtree.hpp"
 #include "utils/utils.hpp"
 
-#define BODIES 50000
+#define BODIES 50000u
 
 int main() {
   srand(time(NULL));
@@ -22,7 +23,6 @@ int main() {
   sf::Clock clockMain;
   sf::Clock clockTitle;
   float dt;
-  sf::Vector2f center = sf::Vector2f(WIDTH, HEIGHT) * 0.5f;
 
   sf::RenderStates states;
   states.blendMode = sf::BlendAdd;
@@ -33,26 +33,16 @@ int main() {
 
     profilerTasks[0] = {0, 0, "Quadtree::insert", turqoise};
     profilerTasks[1] = {0, 0, "Quadtree::propagate", emerald};
-    profilerTasks[2] = {0, 0, "Quadtree::acceleration", peterRiver};
+    profilerTasks[2] = {0, 0, "Qt Acceleration", peterRiver};
   }
 
   ImGuiUtils::ProfilerGraph profilerGraph(144);
 
-  // Setup particles
+  Spawner::spiral(bodies, BODIES - 1);
+  bodies.push_back(Body({WIDTH * 0.5f, HEIGHT * 0.5f},  1e3f));
+
+  // Set default color
   for (size_t i = 0; i < BODIES; i++) {
-    constexpr int spawnRadius = HEIGHT * 0.48f;
-    constexpr int max =  1000;
-    constexpr int min = -1000;
-
-    sf::Vector2f dir(
-      (rand() % (max - min + 1) + min) / (float)max,
-      (rand() % (max - min + 1) + min) / (float)max
-    );
-    dir = dir.normalized();
-
-    float dist = rand() % spawnRadius;
-
-    bodies.push_back({center + dir * dist, 1.f});
     vertices[i].color = sf::Color(30, 30, 30);
   }
 
@@ -95,24 +85,21 @@ int main() {
     qt.propagate();
     profilerTasks[1].endTime = clockMain.getElapsedTime().asSeconds();
 
-    for (size_t i = 0; i < BODIES; i++) {
+    profilerTasks[2].startTime = clockMain.getElapsedTime().asSeconds();
+    for (size_t i = 0; i < BODIES - 1; i++) {
       Body& body = bodies[i];
-
-      profilerTasks[2].startTime = clockMain.getElapsedTime().asSeconds();
-      sf::Vector2f acc = qt.acceleration(body.pos, 0.55555f, 1.f);
-      profilerTasks[2].endTime = clockMain.getElapsedTime().asSeconds();
-
+      sf::Vector2f acc = qt.acceleration(body.pos, 0.5f, 1.f);
       body.update(acc, dt);
-
       vertices[i].position = body.pos;
     }
+    profilerTasks[2].endTime = clockMain.getElapsedTime().asSeconds();
 
-    ImGui::Begin("Hello, world!");
-    ImGui::Button("Look at this pretty button");
-    ImGui::End();
+    // ImGui::Begin("Hello, world!");
+    // ImGui::Button("Look at this pretty button");
+    // ImGui::End();
 
     profilerGraph.LoadFrameData(profilerTasks, 3);
-    profilerGraph.RenderTimings(400, 100, 200, 10, 100.f);
+    profilerGraph.RenderTimings(400, 100, 200, 10, 1.f);
 
     window.clear();
     window.draw(vertices, states);

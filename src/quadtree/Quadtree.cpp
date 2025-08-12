@@ -57,8 +57,8 @@ void Quadtree::insert(const Body& body) {
       size_t nodeIdx1 = children + quadIdx1;
       size_t nodeIdx2 = children + quadIdx2;
 
-      nodes[nodeIdx1].massCenter = body.pos;
-      nodes[nodeIdx1].mass = body.mass;
+      nodes[nodeIdx1].massCenter = nodes[nodeIdx].massCenter;
+      nodes[nodeIdx1].mass = nodes[nodeIdx].mass;
       nodes[nodeIdx2].massCenter = body.pos;
       nodes[nodeIdx2].mass = body.mass;
       return;
