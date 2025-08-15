@@ -43,7 +43,8 @@ struct Spawner {
           float rad = startRad + startArmRad + k * PI / SPIRAL_ARM_TWIST_VALUE;
           sf::Vector2f posOnCircle = {cosf(rad), sinf(rad)};
           pos += posOnCircle * (float)k;
-          bodies.push_back(Body(pos, 1.f, -posOnCircle * 10.f));
+          float mass = rand() % 50000u > 40000u ? 9.f : 1.f;
+          bodies.push_back(Body(pos, mass, -posOnCircle * 10.f));
         }
       }
     }

@@ -1,9 +1,8 @@
 #include "Quadtree.hpp"
 
 #include <algorithm>
+#include <cassert>
 #include <cmath>
-
-#include "utils/utils.hpp"
 
 #define SUBDIVIDE_LIMIT 2 << 8
 
@@ -41,24 +40,29 @@ void Quadtree::insert(const Body& body) {
     return;
   };
 
-  if (nodes[nodeIdx].massCenter == body.pos) {
+  sf::Vector2f currMassCenter = nodes[nodeIdx].massCenter;
+  float currMass = nodes[nodeIdx].mass;
+
+  if (currMassCenter == body.pos) {
     nodes[nodeIdx].mass += body.mass;
     return;
   }
 
-  for (size_t i = 0; i < SUBDIVIDE_LIMIT; i++) {
+  while (true) {
+    static int i = 0;
+
     size_t children = subdivide(nodeIdx);
-    size_t quadIdx1 = nodes[nodeIdx].quad.getIdx(nodes[nodeIdx].massCenter);
+    size_t quadIdx1 = nodes[nodeIdx].quad.getIdx(currMassCenter);
     size_t quadIdx2 = nodes[nodeIdx].quad.getIdx(body.pos);
 
-    if (quadIdx1 == quadIdx2 && (i + 1 < SUBDIVIDE_LIMIT)) {
+    if (quadIdx1 == quadIdx2 && (++i < SUBDIVIDE_LIMIT)) {
       nodeIdx = children + quadIdx1;
     } else {
       size_t nodeIdx1 = children + quadIdx1;
       size_t nodeIdx2 = children + quadIdx2;
 
-      nodes[nodeIdx1].massCenter = nodes[nodeIdx].massCenter;
-      nodes[nodeIdx1].mass = nodes[nodeIdx].mass;
+      nodes[nodeIdx1].massCenter = currMassCenter;
+      nodes[nodeIdx1].mass = currMass;
       nodes[nodeIdx2].massCenter = body.pos;
       nodes[nodeIdx2].mass = body.mass;
       return;
@@ -89,9 +93,12 @@ sf::Vector2f Quadtree::acceleration(sf::Vector2f pos, float theta, float epsilon
   float epsilonSq = epsilon * epsilon;
   size_t nodeIdx = 0;
 
-  for (size_t i = 0; i < 1e6; i++) {
-    if (i + 1 == 1e6)
-      error("[Quadtree::acceleration] Infinity loop detected");
+  while (true) {
+    #ifdef DEBUG
+      constexpr size_t _loopLimit = 1e6;
+      static size_t i = 0;
+      assert(i++ < _loopLimit);
+    #endif
 
     const Node& node = nodes[nodeIdx];
     sf::Vector2f dstVec = node.massCenter - pos;
