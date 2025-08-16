@@ -2,10 +2,9 @@
 #include "Spawner.hpp"
 #include "imgui-SFML.h"
 
+#include "imgui.h"
 #include "quadtree/Quadtree.hpp"
 #include "utils/utils.hpp"
-
-#define BODIES 50000u
 
 int main() {
   srand(time(NULL));
@@ -17,7 +16,6 @@ int main() {
     error("ImGui init error");
 
   std::vector<Body> bodies;
-  sf::VertexArray vertices{sf::PrimitiveType::Points, BODIES};
   Quadtree qt;
 
   sf::Clock clockMain;
@@ -28,13 +26,30 @@ int main() {
   states.blendMode = sf::BlendAdd;
 
   ProfilerManager profilerManager(3, 144);
+  sf::VertexArray vertices;
+  size_t bodiesCount = 0;
+  int initBodiesSpawnCount = 5e4;
+  float initCenterBodySpawnMass = 1e4f;
 
-  Spawner::spiral(bodies, BODIES);
+  const auto initSpawn = [&]() {
+    bodies.clear();
+    Spawner::spiral(bodies, initBodiesSpawnCount);
+    bodies.push_back(Body({WIDTH * 0.5f, HEIGHT * 0.5f}, initCenterBodySpawnMass));
 
-  // Set default color
-  for (size_t i = 0; i < BODIES; i++) {
-    vertices[i].color = sf::Color(30, 30, 30);
-  }
+    bodiesCount = bodies.size();
+    vertices = sf::VertexArray{sf::PrimitiveType::Points, bodiesCount};
+
+    sf::Vertex& lastVertex = vertices[bodiesCount - 1];
+    lastVertex.position = {WIDTH * 0.5f, HEIGHT * 0.5f};
+    lastVertex.color = sf::Color::Magenta;
+
+    // Set default color
+    for (size_t i = 0; i < bodiesCount - 1; i++) {
+      vertices[i].color = sf::Color(30, 30, 30);
+    }
+  };
+
+  initSpawn();
 
   while (window.isOpen()) {
     while (const std::optional event = window.pollEvent()) {
@@ -46,6 +61,9 @@ int main() {
         switch (keyPressed->scancode) {
           case sf::Keyboard::Scancode::Q:
             window.close();
+            break;
+          case sf::Keyboard::Scancode::R:
+            initSpawn();
             break;
           default:
             break;
@@ -82,7 +100,7 @@ int main() {
 
     profilerManager.updateTask(2, [&] () {
 
-      for (size_t i = 0; i < BODIES; i++) {
+      for (size_t i = 0; i < bodiesCount - 1; i++) {
         Body& body = bodies[i];
         sf::Vector2f acc = qt.acceleration(body.pos, 0.5f, 1.f);
         body.update(acc, dt);
@@ -91,7 +109,20 @@ int main() {
 
     }, "Qt Acceleration");
 
-    profilerManager.render(400, 100, 200, 1, 0.100f);
+    if (ImGui::TreeNode("Profiler")) {
+      profilerManager.render(400, 100, 200, 1, 0.100f);
+      ImGui::TreePop();
+    }
+
+    ImGui::Spacing();
+    ImGui::Text("Bodies: %zu", bodiesCount);
+    ImGui::SliderInt("Init bodies spawn count", &initBodiesSpawnCount, 1, 1e6);
+    ImGui::SliderFloat("Init Center's mass", &initCenterBodySpawnMass, 0.1f, 1e6f);
+    ImGui::SliderFloat("Center's mass", &bodies.back().mass, 0.1f, 1e6f);
+    ImGui::SliderFloat("Horizontal acceleration min", &qt.limitX[0], -1000.f, 0.f);
+    ImGui::SliderFloat("Horizontal acceleration max", &qt.limitX[1], 0.f, 1000.f);
+    ImGui::SliderFloat("Vertical acceleration min", &qt.limitY[0], -1000.f, 0.f);
+    ImGui::SliderFloat("Vertical acceleration max", &qt.limitY[1], 0.f, 1000.f);
 
     window.clear();
     window.draw(vertices, states);

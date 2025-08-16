@@ -118,6 +118,9 @@ sf::Vector2f Quadtree::acceleration(sf::Vector2f pos, float theta, float epsilon
     }
   }
 
+  acc.x = std::clamp(acc.x, limitX[0], limitX[1]);
+  acc.y = std::clamp(acc.y, limitY[0], limitY[1]);
+
   return acc;
 }
 

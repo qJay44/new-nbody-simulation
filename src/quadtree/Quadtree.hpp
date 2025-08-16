@@ -8,6 +8,9 @@ struct Quadtree {
   std::vector<Node> nodes;
   std::vector<size_t> parents;
 
+  float limitX[2]{-100.f, 100.f};
+  float limitY[2]{-100.f, 100.f};
+
   size_t subdivide(size_t node);
 
   void insert(const Body& body);
